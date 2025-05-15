@@ -1,5 +1,6 @@
 package com.gdghufs.nabi.di // 실제 패키지 경로
 
+import android.service.autofill.UserData
 import com.gdghufs.nabi.data.datasource.AuthDataSource
 import com.gdghufs.nabi.data.datasource.FirebaseAuthDataSource
 import com.gdghufs.nabi.data.repository.AuthRepository

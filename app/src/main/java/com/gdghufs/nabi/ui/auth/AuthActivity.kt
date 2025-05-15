@@ -1,31 +1,17 @@
 package com.gdghufs.nabi.ui.auth
 
-import android.app.Activity
-import android.content.Intent
-import android.credentials.GetCredentialException
 import android.os.Bundle
 import android.util.Log
-import android.widget.Toast
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
-import androidx.activity.result.IntentSenderRequest
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels // viewModels 임포트
-import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.platform.LocalContext
 import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.GetCredentialResponse
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.lifecycleScope
 import com.gdghufs.nabi.BuildConfig
-import com.google.android.gms.common.api.ApiException
 import com.google.firebase.auth.GoogleAuthProvider
-import com.gdghufs.nabi.MainActivity
-import com.gdghufs.nabi.R
 import com.gdghufs.nabi.ui.theme.NabiTheme
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential.Companion.TYPE_GOOGLE_ID_TOKEN_CREDENTIAL
@@ -102,7 +88,7 @@ class AuthActivity : ComponentActivity() {
 
                     } catch (e: com.google.android.libraries.identity.googleid.GoogleIdTokenParsingException) {
                         Log.e(TAG, "GoogleIdTokenParsingException in Activity", e)
-                    } catch (e: Exception) { // 그 외 AuthCredential 생성 중 예외
+                    } catch (e: Exception) {
                         Log.e(TAG, "Error creating Firebase credential in Activity", e)
                     }
                 } else {
