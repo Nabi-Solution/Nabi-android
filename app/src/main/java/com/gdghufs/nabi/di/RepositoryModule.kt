@@ -17,12 +17,6 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindAuthDataSource(
-        firebaseAuthDataSource: FirebaseAuthDataSource
-    ): AuthDataSource
-
-    @Binds
-    @Singleton
     abstract fun bindAuthRepository(
         authRepositoryImpl: AuthRepositoryImpl
     ): AuthRepository

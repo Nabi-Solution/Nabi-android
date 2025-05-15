@@ -6,6 +6,7 @@ import com.google.firebase.auth.FirebaseUser
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 import com.gdghufs.nabi.utils.Result
+import kotlinx.coroutines.flow.Flow
 
 class FirebaseAuthDataSource @Inject constructor(
     private val firebaseAuth: FirebaseAuth
@@ -45,4 +46,5 @@ class FirebaseAuthDataSource @Inject constructor(
     override fun signOut() {
         firebaseAuth.signOut()
     }
+
 }

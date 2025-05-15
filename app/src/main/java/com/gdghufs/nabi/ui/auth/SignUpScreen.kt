@@ -1,5 +1,4 @@
-// --- ui/auth/SignUpScreen.kt ---
-package com.gdghufs.nabi.ui.auth // 실제 패키지 경로
+package com.gdghufs.nabi.ui.auth
 
 import android.util.Patterns
 import androidx.compose.foundation.Image
@@ -28,15 +27,14 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.gdghufs.nabi.R // 실제 리소스 경로
-// import com.gdghufs.nabi.ui.theme.NabiTheme // 테마가 있다면 임포트
+import com.gdghufs.nabi.ui.theme.AccentYellow
 
 @Composable
 fun SignUpScreen(
     isLoading: Boolean,
-    // 이름 필드는 UI에 있지만 Firebase 기본 가입에는 사용 안 함. 필요시 ViewModel에서 별도 처리
-    onSignUpClick: (String, String) -> Unit, // email, password 만 전달
+    onSignUpClick: (email: String, password: String, name: String) -> Unit,
     onSwitchToSignInClick: () -> Unit,
-    onBackClick: () -> Unit = {} // 기본값 제공
+    onBackClick: () -> Unit = {}
 ) {
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
@@ -45,22 +43,22 @@ fun SignUpScreen(
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
 
-    // 유효성 검사
     fun isEmailValid(email: String): Boolean {
         return Patterns.EMAIL_ADDRESS.matcher(email).matches()
     }
-    val isPasswordValid = password.length >= 6 // Firebase 비밀번호 최소 길이 (예시)
-    val doPasswordsMatch = password == confirmPassword && password.isNotEmpty()
-    val isNameValid = name.isNotBlank() // 이름 필드가 비어있지 않은지 확인
 
-    // 가입 버튼 활성화 조건
-    val isSignUpEnabled = isNameValid && isEmailValid(email) && isPasswordValid && doPasswordsMatch && !isLoading
+    val isPasswordValid = password.length >= 6
+    val doPasswordsMatch = password == confirmPassword && password.isNotEmpty()
+    val isNameValid = name.isNotBlank()
+
+    val isSignUpEnabled =
+        isNameValid && isEmailValid(email) && isPasswordValid && doPasswordsMatch && !isLoading
 
     Column(
         Modifier
             .fillMaxSize()
             .padding(horizontal = 24.dp, vertical = 16.dp)
-            .verticalScroll(rememberScrollState()), // 내용 많을 시 스크롤 가능하게
+            .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
@@ -127,7 +125,10 @@ fun SignUpScreen(
             isError = !isPasswordValid && password.isNotEmpty(),
             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
             trailingIcon = {
-                val image = if (passwordVisible) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder
+                val image =
+                    if (passwordVisible) painterResource(R.drawable.visibility_24px) else painterResource(
+                        R.drawable.visibility_off_24px
+                    )
                 IconButton(onClick = { passwordVisible = !passwordVisible }) {
                     Icon(image, if (passwordVisible) "Hide password" else "Show password")
                 }
@@ -135,7 +136,11 @@ fun SignUpScreen(
             enabled = !isLoading
         )
         if (!isPasswordValid && password.isNotEmpty()) {
-            Text("Password must be at least 6 characters", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+            Text(
+                "Password must be at least 6 characters",
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall
+            )
         }
 
         Spacer(Modifier.height(24.dp))
@@ -148,7 +153,10 @@ fun SignUpScreen(
             isError = !doPasswordsMatch && confirmPassword.isNotEmpty(),
             visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
             trailingIcon = {
-                val image = if (confirmPasswordVisible) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder
+                val image =
+                    if (passwordVisible) painterResource(R.drawable.visibility_24px) else painterResource(
+                        R.drawable.visibility_off_24px
+                    )
                 IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
                     Icon(image, if (confirmPasswordVisible) "Hide password" else "Show password")
                 }
@@ -156,14 +164,20 @@ fun SignUpScreen(
             enabled = !isLoading
         )
         if (!doPasswordsMatch && confirmPassword.isNotEmpty()) {
-            Text("Passwords do not match", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+            Text(
+                "Passwords do not match",
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall
+            )
         }
 
         Spacer(Modifier.height(60.dp)) // 간격 조정
 
         // 가입 버튼 또는 로딩 인디케이터
         Box(
-            modifier = Modifier.fillMaxWidth().height(56.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
             contentAlignment = Alignment.Center
         ) {
             if (isLoading) {
@@ -171,58 +185,55 @@ fun SignUpScreen(
             } else {
                 Button(
                     onClick = {
-                        // 로컬 유효성 검사는 isSignUpEnabled로 처리됨
-                        onSignUpClick(email, password) // ViewModel에 email, password 전달
+                        onSignUpClick(email, password, name)
                     },
                     modifier = Modifier.fillMaxSize(),
-                    enabled = isSignUpEnabled, // 유효성 + 로딩 상태
+                    enabled = isSignUpEnabled,
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xffA02121), // 테마 색상 사용 권장
+                        containerColor = Color(0xffA02121),
                         contentColor = Color.White,
                         disabledContainerColor = Color(0xffF3F6F6),
                         disabledContentColor = Color(0xff797C7B)
                     )
                 ) {
-                    Text("Create Account", style = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold)) // 버튼 텍스트 수정
+                    Text(
+                        "Create Account",
+                        style = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                    )
                 }
             }
         }
         Spacer(Modifier.height(24.dp))
 
-        // 로그인 화면 전환 버튼
         TextButton(
             onClick = { if (!isLoading) onSwitchToSignInClick() },
             enabled = !isLoading
         ) {
-            Text("Already have an account? Log In")
+            Text("Already have an account? Log In", color = AccentYellow)
         }
-        Spacer(Modifier.height(16.dp)) // 하단 여백
+        Spacer(Modifier.height(16.dp))
     }
 }
 
 @Preview(showBackground = true)
 @Composable
 fun SignUpScreenPreview() {
-    // NabiTheme { // 테마가 있다면 적용
     SignUpScreen(
         isLoading = false,
-        onSignUpClick = { _, _ -> },
+        onSignUpClick = { _, _, _ -> },
         onSwitchToSignInClick = { },
         onBackClick = { }
     )
-    // }
 }
 
-@Preview(showBackground = true, name="SignUp Loading State")
+@Preview(showBackground = true, name = "SignUp Loading State")
 @Composable
 fun SignUpScreenLoadingPreview() {
-    // NabiTheme {
     SignUpScreen(
         isLoading = true,
-        onSignUpClick = { _, _ -> },
+        onSignUpClick = { _, _, _ -> },
         onSwitchToSignInClick = { },
         onBackClick = { }
     )
-    // }
 }

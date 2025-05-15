@@ -49,8 +49,8 @@ fun OnboardingScreenPreview() {
 @Composable
 fun OnboardingScreen(
     onGoogleSignUpClick: () -> Unit = {},
-    onEmailSignUpClick: () -> Unit = {},
-    onSignInClick: () -> Unit = {}
+    onNavigateToSignUp: () -> Unit = {},
+    onNavigateToLogin: () -> Unit = {}
 ) {
     Column(
         Modifier
@@ -164,7 +164,7 @@ fun OnboardingScreen(
                 .fillMaxWidth()
                 .background(color = Color(0xffF3F6F6), shape = RoundedCornerShape(16.dp))
                 .clip(RoundedCornerShape(16.dp))
-                .clickable { onEmailSignUpClick() }
+                .clickable { onNavigateToSignUp() }
                 .padding(16.dp)
         ) {
             Text(
@@ -183,7 +183,7 @@ fun OnboardingScreen(
             Modifier
                 .align(Alignment.CenterHorizontally)
                 .clickable {
-                    onSignInClick()
+                    onNavigateToLogin()
                 }) {
             Text(
                 "Existing account?",
