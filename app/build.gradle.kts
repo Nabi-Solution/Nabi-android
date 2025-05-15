@@ -83,4 +83,7 @@ dependencies {
 
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.material3)
+
+    implementation(libs.coil.compose)
+    implementation(libs.coil.network.okhttp)
 }
