@@ -17,7 +17,6 @@ import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.temporal.TemporalAdjusters
 
-val today = LocalDate.of(2025, 5, 16)
 
 @Composable
 fun WeeklyCalendarView(currentDate: LocalDate) {
