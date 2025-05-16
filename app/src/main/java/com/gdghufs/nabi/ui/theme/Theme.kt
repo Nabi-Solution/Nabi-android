@@ -10,6 +10,7 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -18,13 +19,15 @@ import androidx.core.view.WindowInsetsControllerCompat
 private val DarkColorScheme = darkColorScheme(
     primary = Red,
     secondary = RedDark,
-    tertiary = Pink80
+    tertiary = Pink80,
+    background = Color.White
 )
 
 private val LightColorScheme = lightColorScheme(
     primary = Red,
     secondary = RedDark,
-    tertiary = Pink40
+    tertiary = Pink40,
+    background = Color.White,
 
     /* Other default colors to override
     background = Color(0xFFFFFBFE),
@@ -39,7 +42,7 @@ private val LightColorScheme = lightColorScheme(
 
 @Composable
 fun NabiTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    darkTheme: Boolean = false,
     // Dynamic color is available on Android 12+
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit

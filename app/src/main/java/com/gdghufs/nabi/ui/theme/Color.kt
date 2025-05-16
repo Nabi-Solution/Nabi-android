@@ -12,3 +12,5 @@ val Pink40 = Color(0xFF7D5260)
 
 val Red = Color(0xffA02121)
 val RedDark = Color(0xff740D0D)
+
+val AccentYellow = Color(0xffFEC62F)

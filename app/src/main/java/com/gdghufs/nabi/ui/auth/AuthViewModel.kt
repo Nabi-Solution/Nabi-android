@@ -13,15 +13,11 @@ import javax.inject.Inject
 import com.gdghufs.nabi.utils.Result
 import dagger.hilt.android.lifecycle.HiltViewModel
 
-enum class AuthScreen {
-    SIGN_IN, SIGN_UP
-}
 
 data class AuthUiState(
     val isLoading: Boolean = false,
     val error: String? = null,
     val currentUser: User? = null,
-    val currentScreen: AuthScreen = AuthScreen.SIGN_IN,
     val authSuccess: Boolean = false
 )
 
@@ -31,7 +27,7 @@ class AuthViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _uiState =
-        MutableStateFlow(AuthUiState(currentUser = authRepository.getCurrentUser()))
+        MutableStateFlow(AuthUiState())
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
 
     private val _googleSignInRequest = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
@@ -59,10 +55,11 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    fun signUpWithEmailPassword(email: String, password: String) {
+    fun signUpWithEmailPassword(email: String, password: String, name: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null, authSuccess = false) }
-            when (val result = authRepository.signUpWithEmailPassword(email, password)) {
+            when (val result =
+                authRepository.signUpWithEmailPassword(email, password, name, "patient")) {
                 is Result.Success -> {
                     _uiState.update {
                         it.copy(isLoading = false, currentUser = result.data, authSuccess = true)
@@ -104,5 +101,13 @@ class AuthViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    fun clearError() {
+        _uiState.update { it.copy(error = null) }
+    }
+
+    fun resetAuthSuccess() {
+        _uiState.update { it.copy(authSuccess = false) }
     }
 }

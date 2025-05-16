@@ -5,7 +5,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.gdghufs.nabi.ui.account.AccountScreen
+import com.gdghufs.nabi.ui.account.AccountRoute
 import com.gdghufs.nabi.ui.chat.ChatScreen
 import com.gdghufs.nabi.ui.history.HistoryScreen
 import com.gdghufs.nabi.ui.home.HomeScreen
@@ -23,7 +23,7 @@ fun AppNavHost(
         modifier = modifier
     ) {
         composable(Screen.Home.route) {
-            HomeScreen()
+            HomeScreen("John Doe")
         }
         composable(Screen.Today.route) {
             TodayScreen()
@@ -35,7 +35,11 @@ fun AppNavHost(
             HistoryScreen()
         }
         composable(Screen.Account.route) {
-            AccountScreen()
+            AccountRoute(
+                onBackClick = {
+                    navController.popBackStack()
+                }
+            )
         }
     }
 }
