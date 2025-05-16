@@ -7,6 +7,10 @@ import com.gdghufs.nabi.data.datasource.FirebaseAuthDataSource
 import com.gdghufs.nabi.data.datasource.FirebaseChatDataSource
 import com.gdghufs.nabi.data.datasource.FirestoreChatAppointmentDataSource
 import com.gdghufs.nabi.data.datasource.FirestoreUserDataSourceImpl
+import com.gdghufs.nabi.data.datasource.HabitDataSource
+import com.gdghufs.nabi.data.datasource.HabitDataSourceImpl
+import com.gdghufs.nabi.data.datasource.MedicationDataSource
+import com.gdghufs.nabi.data.datasource.MedicationDataSourceImpl
 import com.gdghufs.nabi.data.datasource.TextToSpeechDataSource
 import com.gdghufs.nabi.data.datasource.TextToSpeechRemoteDataSource
 import com.gdghufs.nabi.data.datasource.UserDataSource
@@ -48,4 +52,12 @@ abstract class DataSourceModule {
     abstract fun bindChatAppointmentDataSource(
         firebaseChatAppointmentDataSource: FirestoreChatAppointmentDataSource
     ): ChatAppointmentDataSource
+
+    @Binds
+    @Singleton
+    abstract fun bindHabitDataSource(impl: HabitDataSourceImpl): HabitDataSource
+
+    @Binds
+    @Singleton
+    abstract fun bindMedicationDataSource(impl: MedicationDataSourceImpl): MedicationDataSource
 }

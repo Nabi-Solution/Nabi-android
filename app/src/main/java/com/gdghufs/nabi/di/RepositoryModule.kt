@@ -6,6 +6,10 @@ import com.gdghufs.nabi.data.repository.UserRepository
 import com.gdghufs.nabi.data.repository.UserRepositoryImpl
 import com.gdghufs.nabi.data.repository.ChatRepository
 import com.gdghufs.nabi.data.repository.ChatRepositoryImpl
+import com.gdghufs.nabi.data.repository.HabitRepository
+import com.gdghufs.nabi.data.repository.HabitRepositoryImpl
+import com.gdghufs.nabi.data.repository.MedicationRepository
+import com.gdghufs.nabi.data.repository.MedicationRepositoryImpl
 import com.gdghufs.nabi.data.repository.TextToSpeechRepository
 import com.gdghufs.nabi.data.repository.TextToSpeechRepositoryImpl
 import dagger.Binds
@@ -41,4 +45,12 @@ abstract class RepositoryModule {
     abstract fun bindChatAppointmentRepository(
         chatAppointmentRepositoryImpl: ChatAppointmentRepositoryImpl
     ): ChatAppointmentRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindHabitRepository(impl: HabitRepositoryImpl): HabitRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindMedicationRepository(impl: MedicationRepositoryImpl): MedicationRepository
 }

@@ -15,11 +15,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.gdghufs.nabi.ui.theme.NabiTheme
 import com.gdghufs.nabi.ui.theme.RobotoPretendardFamily
-
 @Composable
 @Preview(showBackground = true)
 fun TimeTagsPreview() {
-    NabiTheme {
+    NabiTheme { // Assuming you have this Theme wrapper
         Column {
             TimeTag(TimeTagType.AnyTime)
             TimeTag(TimeTagType.Afternoon)
@@ -42,8 +41,8 @@ fun TimeTag(
         Text(
             text = type.text,
             fontSize = 12.sp,
-            fontWeight = FontWeight.SemiBold,
-            fontFamily = RobotoPretendardFamily,
+            fontWeight = FontWeight.SemiBold, // Adjusted
+            fontFamily = RobotoPretendardFamily,   // Adjusted
             color = type.textColor,
         )
     }
