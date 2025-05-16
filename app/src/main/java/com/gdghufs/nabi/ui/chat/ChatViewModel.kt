@@ -23,10 +23,10 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.File
 import java.io.FileOutputStream
-import java.util.ArrayDeque // 명시적 큐 사용
+import java.util.ArrayDeque
 import javax.inject.Inject
 
-enum class TtsPlaybackState { // 이전과 동일
+enum class TtsPlaybackState {
     IDLE,
     LOADING,
     PLAYING,
@@ -55,46 +55,48 @@ class ChatViewModel @Inject constructor(
     private val _ttsErrorMessage = MutableStateFlow<String?>(null)
     val ttsErrorMessage: StateFlow<String?> = _ttsErrorMessage.asStateFlow()
 
-    private var currentSessionId: String = "test_session_123"
+    // Voice mode state
+    private val _isVoiceModeEnabled =
+        MutableStateFlow(false) // Initial value can be kept as false or changed to true if needed
+    val isVoiceModeEnabled: StateFlow<Boolean> = _isVoiceModeEnabled.asStateFlow()
+
+    private var currentSessionId: String = "test_session_123" // Default session ID or dynamic allocation
 
     private val ttsRequestQueue = ArrayDeque<String>()
     private val ttsQueueMutex = Mutex()
     private var isProcessingTtsJob = false
     private var currentTtsJob: Job? = null
 
-
     init {
         loadMessages(currentSessionId)
+        // Start AI's first utterance
         viewModelScope.launch {
-            val aiGreeting = ChatMessage(
-                sessionId = currentSessionId,
-                sender = SenderType.AI.value,
-                message = "안녕하세요! 나비입니다. 오늘 기분은 어떠신가요?",
-                type = MessageType.TEXT.value
-            )
+            // First text message (TTS target)
+            val aiGreetingMessage = "Hello! This is Nabi. How are you feeling today?"
             repository.sendTextMessage(
                 currentSessionId,
-                aiGreeting.message,
+                aiGreetingMessage,
                 SenderType.AI,
                 MessageType.TEXT
             )
 
-
-            kotlinx.coroutines.delay(1500)
-            val aiSelectMessage = ChatMessage(
-                sessionId = currentSessionId,
-                sender = SenderType.AI.value,
-                message = "오늘 당신의 에너지 레벨은 어떠셨나요?",
-                type = MessageType.SELECT.value,
-                choices = listOf("매우 좋음", "좋음", "보통", "나쁨", "매우 나쁨")
-            )
+            // Choice message after a slight delay (not a TTS target)
+            kotlinx.coroutines.delay(1500) // Delay can be adjusted considering TTS playback time
+            val aiSelectMessageText = "How was your energy level today?"
+            val choices = listOf("Very Good", "Good", "Average", "Bad", "Very Bad")
             repository.sendTextMessage(
                 currentSessionId,
-                aiSelectMessage.message,
+                aiSelectMessageText,
                 SenderType.AI,
                 MessageType.SELECT,
-                aiSelectMessage.choices
+                choices
             )
+
+            // Enable voice mode after AI's first utterance
+            if (!_isVoiceModeEnabled.value) {
+                _isVoiceModeEnabled.value = true
+                Log.d("ChatViewModel", "Default voice mode enabled after initial AI message.")
+            }
         }
     }
 
@@ -102,7 +104,10 @@ class ChatViewModel @Inject constructor(
         currentSessionId = sessionId
         lastSpokenAiMessageId = null
         _messages.value = emptyList()
-        stopSpeaking()
+        stopSpeaking() // Stop TTS
+        // Initialize voice mode related states as needed
+        // e.g., If you want to reset voice mode to default (e.g., false) when a new session starts, handle it here
+        // _isVoiceModeEnabled.value = false // or true, depending on policy
         loadMessages(sessionId)
     }
 
@@ -110,7 +115,7 @@ class ChatViewModel @Inject constructor(
         viewModelScope.launch {
             repository.getMessages(sessionId)
                 .catch { e ->
-                    _errorMessage.value = "메시지 로딩 실패: ${e.message}"
+                    _errorMessage.value = "Failed to load messages: ${e.message}"
                     Log.e("ChatViewModel", "Error loading messages", e)
                 }
                 .collect { currentMessageList ->
@@ -120,7 +125,7 @@ class ChatViewModel @Inject constructor(
 
                     if (newLastMessage != null &&
                         newLastMessage.sender == SenderType.AI.value &&
-                        newLastMessage.type == MessageType.TEXT.value &&
+                        newLastMessage.type == MessageType.TEXT.value && // TTS for TEXT type messages only
                         newLastMessage.messageId != lastSpokenAiMessageId &&
                         (previousLastMessage?.messageId != newLastMessage.messageId || (_messages.value.size == 1 && previousLastMessage == null))
                     ) {
@@ -140,8 +145,9 @@ class ChatViewModel @Inject constructor(
         }
     }
 
-    fun sendTextMessage(text: String) {
+    fun sendTextMessage(text: String, fromSTT : Boolean = false) {
         if (text.isBlank() || currentSessionId.isBlank()) return
+        if (fromSTT && !_isVoiceModeEnabled.value) return
         viewModelScope.launch {
             try {
                 repository.sendTextMessage(
@@ -150,8 +156,9 @@ class ChatViewModel @Inject constructor(
                     SenderType.PATIENT,
                     MessageType.TEXT
                 )
+                 _isVoiceModeEnabled.value = false // Consider if STT sending text should turn off voice mode
             } catch (e: Exception) {
-                _errorMessage.value = "메시지 전송 실패: ${e.message}"
+                _errorMessage.value = "Failed to send message: ${e.message}"
                 Log.e("ChatViewModel", "Error sending text message", e)
             }
         }
@@ -161,13 +168,28 @@ class ChatViewModel @Inject constructor(
         if (currentSessionId.isBlank()) return
         viewModelScope.launch {
             try {
-                repository.sendSelectResponseMessage(currentSessionId, originalMessageText, choice)
+                // First, display the user's selection as a plain text message
+                repository.sendTextMessage(
+                    currentSessionId,
+                    choice, // Selected content as message
+                    SenderType.PATIENT,
+                    MessageType.TEXT // Process as plain text
+                )
+                // Then, internally process the selection response (e.g., decide AI's next action)
+                // This part might be handled by the server or AI logic. Here, only a local log is left as an example.
+                Log.d(
+                    "ChatViewModel",
+                    "Choice selected: '$choice' for question '$originalMessageText'"
+                )
+                // If an immediate AI response message to the selection is needed, call repository.sendTextMessage(..., SenderType.AI, ...) here
+
             } catch (e: Exception) {
-                _errorMessage.value = "선택 응답 전송 실패: ${e.message}"
+                _errorMessage.value = "Failed to send choice response: ${e.message}"
                 Log.e("ChatViewModel", "Error sending choice response", e)
             }
         }
     }
+
 
     private fun requestSpeech(text: String) {
         if (text.isBlank()) return
@@ -184,19 +206,18 @@ class ChatViewModel @Inject constructor(
         }
     }
 
-    // 수정된 tryProcessNextInQueue 함수
     private fun tryProcessNextInQueue() {
-        viewModelScope.launch { // 이 launch는 큐 체크 및 작업 시작 '트리거' 역할
-            val textToSpeak: String // Lock 외부에서 사용할 변수
+        viewModelScope.launch {
+            val textToSpeak: String
 
-            ttsQueueMutex.withLock { // Lock 범위는 큐 조작 및 상태 플래그 업데이트로 최소화
+            ttsQueueMutex.withLock {
                 if (isProcessingTtsJob || ttsRequestQueue.isEmpty()) {
                     if (isProcessingTtsJob) Log.d("ChatViewModel", "TTS job already in progress.")
                     if (ttsRequestQueue.isEmpty() && !isProcessingTtsJob) Log.d(
                         "ChatViewModel",
                         "TTS queue is empty, nothing to process."
                     )
-                    return@launch // 현재 launch (큐 체크 트리거) 종료
+                    return@launch
                 }
                 isProcessingTtsJob = true
                 textToSpeak = ttsRequestQueue.removeFirst()
@@ -204,7 +225,7 @@ class ChatViewModel @Inject constructor(
                     "ChatViewModel",
                     "Dequeued for TTS: \"$textToSpeak\". Remaining in queue: ${ttsRequestQueue.size}"
                 )
-            } // Mutex 락 여기서 해제
+            }
 
             currentTtsJob = viewModelScope.launch {
                 executeTTSJob(textToSpeak)
@@ -216,6 +237,8 @@ class ChatViewModel @Inject constructor(
         _ttsPlaybackState.value = TtsPlaybackState.LOADING
         _ttsErrorMessage.value = null
         Log.d("ChatViewModel", "Requesting audio for TTS job: \"$text\"")
+
+        // _isVoiceModeEnabled.value = true // TTS starting does not necessarily mean voice mode is enabled by user. It's for AI speech.
 
         textToSpeechRepository.getSpeechAudio(text).fold(
             onSuccess = { audioBytes ->
@@ -295,6 +318,8 @@ class ChatViewModel @Inject constructor(
                 isProcessingTtsJob = false
                 Log.d("ChatViewModel", "TTS job completed. isProcessingTtsJob set to false.")
             }
+            // Ensure current TTS Job is completed before attempting to process next TTS
+            currentTtsJob = null // Remove current Job reference
             tryProcessNextInQueue()
         }
     }
@@ -314,18 +339,20 @@ class ChatViewModel @Inject constructor(
         viewModelScope.launch {
             ttsQueueMutex.withLock {
                 ttsRequestQueue.clear()
-                currentTtsJob?.cancel()
+                currentTtsJob?.cancel() // Cancel currently ongoing TTS Job
+                currentTtsJob = null
                 isProcessingTtsJob = false
-                Log.d("ChatViewModel", "TTS queue cleared and processing stopped.")
+                Log.d("ChatViewModel", "TTS queue cleared and current TTS job cancelled.")
             }
             mediaPlayer?.let {
                 if (it.isPlaying) {
                     it.stop()
                 }
-                it.release()
+                it.release() // Release MediaPlayer resources
             }
             mediaPlayer = null
             _ttsPlaybackState.value = TtsPlaybackState.IDLE
+            Log.d("ChatViewModel", "MediaPlayer stopped and released.")
         }
     }
 
@@ -342,11 +369,23 @@ class ChatViewModel @Inject constructor(
         }
     }
 
+    // Voice mode toggle function
+    fun toggleVoiceMode() {
+        _isVoiceModeEnabled.value = !_isVoiceModeEnabled.value
+        Log.d("ChatViewModel", "Voice mode toggled. Enabled: ${isVoiceModeEnabled.value}")
+        if (!_isVoiceModeEnabled.value) {
+            // Additional tasks when voice mode is deactivated (e.g., notification to force stop STT - handled in UI)
+        }
+    }
+
+
     override fun onCleared() {
         super.onCleared()
         Log.d("ChatViewModel", "onCleared called.")
         stopSpeaking()
         clearTemporaryAudioFiles()
+        mediaPlayer?.release() // Reliably release MediaPlayer resources when ViewModel is cleared
+        mediaPlayer = null
         Log.d("ChatViewModel", "ChatViewModel cleared.")
     }
 }
