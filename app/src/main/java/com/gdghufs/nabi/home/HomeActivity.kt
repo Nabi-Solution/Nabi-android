@@ -8,31 +8,9 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -76,24 +54,10 @@ fun MainHomeScreen(homeViewModel: HomeViewModel = hiltViewModel()) {
     val isLoading by homeViewModel.isLoading.collectAsStateWithLifecycle()
     val showDiseaseDialog by homeViewModel.showDiseaseDialog.collectAsStateWithLifecycle()
     val context = LocalContext.current
-    var selectedDisease by remember {
-        mutableStateOf("")
-    }
-
-    if (showDiseaseDialog) {
-        DiseaseSelectionDialog(
-            onConfirm = {
-                selectedDisease = it
-                homeViewModel.updateUserDisease(it)
-            }
-        )
-    }
 
     LaunchedEffect(isLoading, currentUser) {
         if (!isLoading && currentUser == null) {
-            val intent = Intent(context, AuthActivity::class.java).apply {
-
-            }
+            val intent = Intent(context, AuthActivity::class.java)
             context.startActivity(intent)
         }
     }
@@ -112,6 +76,14 @@ fun MainHomeScreen(homeViewModel: HomeViewModel = hiltViewModel()) {
 
         currentUser != null -> {
             MainAppUI(homeViewModel)
+            
+            if (showDiseaseDialog) {
+                DiseaseSelectionDialog(
+                    onConfirm = { disease ->
+                        homeViewModel.updateUserDisease(disease)
+                    }
+                )
+            }
         }
 
         else -> {
@@ -128,7 +100,7 @@ fun MainHomeScreen(homeViewModel: HomeViewModel = hiltViewModel()) {
 }
 
 @Composable
-fun MainAppUI(homeViewModel: HomeViewModel) { // ViewModel을 AppNavHost 내부 화면에서 사용하기 위해 전달
+fun MainAppUI(homeViewModel: HomeViewModel) {
     val navController = rememberNavController()
     val navItems = listOf(
         BottomNavItem.Home,
@@ -202,37 +174,27 @@ fun MainAppUI(homeViewModel: HomeViewModel) { // ViewModel을 AppNavHost 내부 
     }
 }
 
-
-// Data class to hold disease information for easier management
-data class DiseaseInfo(
-    val id: String, // Internal ID, e.g., "asthma"
-    val displayName: String // Display name, e.g., "Asthma"
-)
-
 @Composable
 fun DiseaseSelectionDialog(
-    onConfirm: (String) -> Unit = {}, // Callback with the internal ID of the selected disease
-    onDismiss: () -> Unit = {}       // Callback for when the dialog is dismissed
+    onConfirm: (String) -> Unit
 ) {
-    var selectedDiseaseId by remember {
-        mutableStateOf("") // Stores the internal ID of the selected disease
-    }
+    var selectedDiseaseId by remember { mutableStateOf("") }
 
     val diseases = listOf(
-        DiseaseInfo("asthma", "Asthma"),
-        DiseaseInfo("hypertension", "Hypertension"),
-        DiseaseInfo("depression", "Depression")
+        DiseaseInfo("asthma", "천식"),
+        DiseaseInfo("hypertension", "고혈압"),
+        DiseaseInfo("depression", "우울증")
     )
 
     AlertDialog(
-        onDismissRequest = onDismiss, // Call onDismiss when the user tries to dismiss (e.g., back button, click outside)
-        title = { Text("Select Disease") },
+        onDismissRequest = { },
+        title = { Text("질병 선택") },
         text = {
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text("Please select the disease you want to manage.")
+                Text("관리하고자 하는 질병을 선택해주세요.")
                 Spacer(modifier = Modifier.height(8.dp))
 
                 diseases.forEach { diseaseInfo ->
@@ -241,11 +203,11 @@ fun DiseaseSelectionDialog(
                         onClick = { selectedDiseaseId = diseaseInfo.id },
                         modifier = Modifier.fillMaxWidth(),
                         border = BorderStroke(
-                            width = if (isSelected) 2.dp else 1.dp, // Thicker border for selected item
-                            color = if (isSelected) Color.Red else Color.Gray
+                            width = if (isSelected) 2.dp else 1.dp,
+                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline
                         ),
                         colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = if (isSelected) Color.Red else MaterialTheme.colorScheme.onSurface // Text color
+                            contentColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                         )
                     ) {
                         Text(diseaseInfo.displayName)
@@ -259,18 +221,24 @@ fun DiseaseSelectionDialog(
                     if (selectedDiseaseId.isNotBlank()) {
                         onConfirm(selectedDiseaseId)
                     }
-                    // Typically, onConfirm would also trigger onDismiss or the logic to hide the dialog
                 },
-                enabled = selectedDiseaseId.isNotBlank() // Enable confirm only if a disease is selected
-            ) { Text("Confirm") }
+                enabled = selectedDiseaseId.isNotBlank()
+            ) {
+                Text("확인")
+            }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { // Added a dismiss button for better UX
-                Text("Cancel")
+            TextButton(onClick = { }) {
+                Text("취소")
             }
         }
     )
 }
+
+data class DiseaseInfo(
+    val id: String,
+    val displayName: String
+)
 
 @Preview(showBackground = true)
 @Composable
@@ -285,10 +253,6 @@ fun DiseaseSelectionDialogPreview() {
                 confirmedDisease = diseaseId
                 showDialog = false // Hide dialog on confirm
                 println("Confirmed: $diseaseId")
-            },
-            onDismiss = {
-                showDialog = false // Hide dialog on dismiss
-                println("Dismissed")
             }
         )
     }

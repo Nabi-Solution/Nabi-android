@@ -5,7 +5,7 @@ import com.gdghufs.nabi.utils.TextToSpeechCallback
 import javax.inject.Inject
 
 interface TextToSpeechRepository {
-    suspend fun getSpeechAudio(text: String, languageCode: String = "en-US", voiceName: String? = "en-US-Chirp3-HD-Achernar"): Result<ByteArray>
+    suspend fun getSpeechAudio(text: String, languageCode: String = "en-US", voiceName: String? = "en-US-Chirp3-HD-Algenib"): Result<ByteArray>
 }
 
 class TextToSpeechRepositoryImpl @Inject constructor(

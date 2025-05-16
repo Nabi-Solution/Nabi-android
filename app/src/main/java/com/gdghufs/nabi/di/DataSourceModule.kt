@@ -8,12 +8,12 @@ import com.gdghufs.nabi.data.datasource.FirebaseChatDataSource
 import com.gdghufs.nabi.data.datasource.FirestoreChatAppointmentDataSource
 import com.gdghufs.nabi.data.datasource.FirestoreUserDataSourceImpl
 import com.gdghufs.nabi.data.datasource.HabitDataSource
-import com.gdghufs.nabi.data.datasource.HabitDataSourceImpl
 import com.gdghufs.nabi.data.datasource.MedicationDataSource
-import com.gdghufs.nabi.data.datasource.MedicationDataSourceImpl
 import com.gdghufs.nabi.data.datasource.TextToSpeechDataSource
 import com.gdghufs.nabi.data.datasource.TextToSpeechRemoteDataSource
 import com.gdghufs.nabi.data.datasource.UserDataSource
+import com.gdghufs.nabi.data.source.HabitDataSourceImpl
+import com.gdghufs.nabi.data.source.MedicationDataSourceImpl
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn

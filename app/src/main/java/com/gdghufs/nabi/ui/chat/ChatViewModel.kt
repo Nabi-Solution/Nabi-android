@@ -12,6 +12,7 @@ import com.gdghufs.nabi.data.model.MessageType
 import com.gdghufs.nabi.data.model.SenderType
 import com.gdghufs.nabi.data.repository.ChatRepository
 import com.gdghufs.nabi.data.repository.TextToSpeechRepository
+import com.gdghufs.nabi.data.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,6 +25,7 @@ import kotlinx.coroutines.sync.withLock
 import java.io.File
 import java.io.FileOutputStream
 import java.util.ArrayDeque
+import java.util.UUID
 import javax.inject.Inject
 
 enum class TtsPlaybackState {
@@ -36,6 +38,7 @@ enum class TtsPlaybackState {
 @HiltViewModel
 class ChatViewModel @Inject constructor(
     private val repository: ChatRepository,
+    private val userRepository: UserRepository,
     private val textToSpeechRepository: TextToSpeechRepository,
     private val application: Application
 ) : ViewModel() {
@@ -60,7 +63,7 @@ class ChatViewModel @Inject constructor(
         MutableStateFlow(false) // Initial value can be kept as false or changed to true if needed
     val isVoiceModeEnabled: StateFlow<Boolean> = _isVoiceModeEnabled.asStateFlow()
 
-    private var currentSessionId: String = "test_session_123" // Default session ID or dynamic allocation
+    private var currentSessionId: String = UUID.randomUUID().toString()
 
     private val ttsRequestQueue = ArrayDeque<String>()
     private val ttsQueueMutex = Mutex()
@@ -68,9 +71,10 @@ class ChatViewModel @Inject constructor(
     private var currentTtsJob: Job? = null
 
     init {
-        loadMessages(currentSessionId)
         // Start AI's first utterance
         viewModelScope.launch {
+            currentSessionId = userRepository.getCurrentUser()?.uid + "_" + currentSessionId
+            loadMessages(currentSessionId)
             // First text message (TTS target)
             val aiGreetingMessage = "Hello! This is Nabi. How are you feeling today?"
             repository.sendTextMessage(
@@ -145,7 +149,7 @@ class ChatViewModel @Inject constructor(
         }
     }
 
-    fun sendTextMessage(text: String, fromSTT : Boolean = false) {
+    fun sendTextMessage(text: String, fromSTT: Boolean = false) {
         if (text.isBlank() || currentSessionId.isBlank()) return
         if (fromSTT && !_isVoiceModeEnabled.value) return
         viewModelScope.launch {
@@ -156,7 +160,8 @@ class ChatViewModel @Inject constructor(
                     SenderType.PATIENT,
                     MessageType.TEXT
                 )
-                 _isVoiceModeEnabled.value = false // Consider if STT sending text should turn off voice mode
+                _isVoiceModeEnabled.value =
+                    false // Consider if STT sending text should turn off voice mode
             } catch (e: Exception) {
                 _errorMessage.value = "Failed to send message: ${e.message}"
                 Log.e("ChatViewModel", "Error sending text message", e)

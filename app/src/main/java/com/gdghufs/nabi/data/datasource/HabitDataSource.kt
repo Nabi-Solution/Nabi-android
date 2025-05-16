@@ -6,4 +6,5 @@ import kotlinx.coroutines.flow.Flow
 interface HabitDataSource {
     fun getHabits(userId: String): Flow<List<Habit>>
     suspend fun updateHabitHistory(habitId: String, date: String, isDone: Boolean)
+    suspend fun addHabit(habit: Habit) // Added
 }

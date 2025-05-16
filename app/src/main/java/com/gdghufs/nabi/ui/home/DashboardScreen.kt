@@ -2,6 +2,7 @@ package com.gdghufs.nabi.ui.home
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items // items(List) 사용을 위해 추가
@@ -15,6 +16,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -43,10 +45,17 @@ fun HomeScreenPreview() {
     NabiTheme {
         // Preview용 가짜 데이터로 HomeScreenContent를 호출
         val previewState = DashboardUiState(
-            user = User(uid="1", displayName = "John Doe", summary = "Feeling good today. Slept well.", email = "", isEmailVerified = false, role = ""),
+            user = User(
+                uid = "1",
+                displayName = "John Doe",
+                summary = "Feeling good today. Slept well.",
+                email = "",
+                isEmailVerified = false,
+                role = ""
+            ),
             appointments = listOf(
-                ChatAppointment(id="a1", name = "Morning Self-Check", hour = 9, minute = 0),
-                ChatAppointment(id="a2", name = "Evening Reflection", hour = 21, minute = 30)
+                ChatAppointment(id = "a1", name = "Morning Self-Check", hour = 9, minute = 0),
+                ChatAppointment(id = "a2", name = "Evening Reflection", hour = 21, minute = 30)
             ),
             daysUsingNavi = "15",
             isLoading = false
@@ -58,15 +67,19 @@ fun HomeScreenPreview() {
 // ViewModel과 연결되는 메인 HomeScreen
 @Composable
 fun HomeScreen(
-    viewModel: DashboardViewModel = hiltViewModel() // Hilt ViewModel 주입
+    viewModel: DashboardViewModel = hiltViewModel(),
+    navigateToChat: () -> Unit = {},
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    HomeScreenContent(uiState = uiState)
+    HomeScreenContent(uiState = uiState, navigateToChat)
 }
 
 // UI 로직만 담당하는 Composable (ViewModel 의존성 없음)
 @Composable
-fun HomeScreenContent(uiState: DashboardUiState) {
+fun HomeScreenContent(
+    uiState: DashboardUiState,
+    navigateToChat: () -> Unit = {}
+) {
     Box(Modifier.fillMaxSize()) {
         Image(
             painter = painterResource(R.drawable.background_day),
@@ -92,7 +105,12 @@ fun HomeScreenContent(uiState: DashboardUiState) {
             CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
         } else if (uiState.errorMessage != null) {
             // 에러 메시지 표시 (간단한 Text 또는 좀 더 정교한 UI 가능)
-            Box(modifier = Modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.Center) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                contentAlignment = Alignment.Center
+            ) {
                 Text(
                     text = "Error: ${uiState.errorMessage}",
                     color = Color.Red,
@@ -130,7 +148,7 @@ fun HomeScreenContent(uiState: DashboardUiState) {
                 Spacer(Modifier.height(16.dp))
 
                 Text(
-                    text = "Been using Navi for ${uiState.daysUsingNavi} days", // ViewModel 데이터 사용
+                    text = "Been using Navi for 16 days", // ViewModel 데이터 사용
                     fontSize = 10.sp,
                     color = Color.Black,
                     fontWeight = FontWeight.Normal
@@ -148,7 +166,12 @@ fun HomeScreenContent(uiState: DashboardUiState) {
 
                 // 약속 목록 (LazyColumn)
                 if (uiState.appointments.isEmpty()) {
-                    Box(modifier = Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
                         Text("No reservations scheduled.", color = Color.Gray)
                     }
                 } else {
@@ -163,7 +186,10 @@ fun HomeScreenContent(uiState: DashboardUiState) {
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         items(uiState.appointments) { appointment -> // ViewModel 데이터 사용
-                            ReservationItem(appointment = appointment)
+                            ReservationItem(appointment = appointment) {
+                                // 예약 클릭 시 동작 (예: 상세 화면으로 이동)
+                                navigateToChat()
+                            }
                         }
                     }
                 }
@@ -218,12 +244,17 @@ fun ReservationItemPreview() {
         // ChatAppointment 객체로 Preview 수정
         ReservationItem(
             appointment = ChatAppointment(name = "Doctor's Visit", hour = 14, minute = 30)
-        )
+        ) {
+
+        }
     }
 }
 
 @Composable
-fun ReservationItem(appointment: ChatAppointment) { // ChatAppointment 객체를 받도록 수정
+fun ReservationItem(
+    appointment: ChatAppointment,
+    onClick: () -> Unit
+) { // ChatAppointment 객체를 받도록 수정
     // 시간 포맷 (예: "02:30 PM")
     val timeFormatter = remember { SimpleDateFormat("hh:mm a", Locale.getDefault()) }
     val calendar = remember { java.util.Calendar.getInstance() }
@@ -234,7 +265,14 @@ fun ReservationItem(appointment: ChatAppointment) { // ChatAppointment 객체를
     Row(
         Modifier
             .fillMaxWidth()
-            .background(color = Color.White.copy(alpha = 0.6f), shape = RoundedCornerShape(8.dp)) // 약간의 투명도와 모서리 둥글기 조절
+            .background(
+                color = Color.White.copy(alpha = 0.6f),
+                shape = RoundedCornerShape(8.dp)
+            ) // 약간의 투명도와 모서리 둥글기 조절
+            .clip(RoundedCornerShape(8.dp))
+            .clickable {
+                onClick()
+            }
             .padding(horizontal = 16.dp, vertical = 12.dp), // 패딩 약간 조절
         verticalAlignment = Alignment.CenterVertically
     ) {

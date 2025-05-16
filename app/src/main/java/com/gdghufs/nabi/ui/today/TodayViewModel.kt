@@ -2,8 +2,10 @@ package com.gdghufs.nabi.ui.today
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.gdghufs.nabi.data.model.DummySuggestions
 import com.gdghufs.nabi.data.model.Habit
 import com.gdghufs.nabi.data.model.Medication
+import com.gdghufs.nabi.data.model.Suggestion
 import com.gdghufs.nabi.data.model.TimeOfDay
 import com.gdghufs.nabi.data.repository.HabitRepository
 import com.gdghufs.nabi.data.repository.MedicationRepository
@@ -53,41 +55,40 @@ enum class ItemType { HABIT, MEDICATION }
 data class TodayScreenUiState(
     val todoItems: List<TodoListItem> = emptyList(),
     val medicationItems: List<TodoListItem> = emptyList(),
+    val suggestions: List<Suggestion> = emptyList(), // Added
     val isLoading: Boolean = true,
     val error: String? = null,
-    val currentDateString: String = DateUtil.getCurrentDateString(), // "yyyy-MM-dd"
-    val displayDateString: String = LocalDate.now().format(DateTimeFormatter.ofPattern("dd MMM")) // e.g., "17 May"
+    val currentDateString: String = DateUtil.getCurrentDateString(),
+    val displayDateString: String = LocalDate.now().format(DateTimeFormatter.ofPattern("dd MMM"))
 )
 
 @HiltViewModel
 class TodayViewModel @Inject constructor(
     private val habitRepository: HabitRepository,
     private val medicationRepository: MedicationRepository,
-    private val userRepository: UserRepository // Example: To get current user ID
+    private val userRepository: UserRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(TodayScreenUiState())
     val uiState: StateFlow<TodayScreenUiState> = _uiState.asStateFlow()
 
-    // In a real app, you'd get the userId from UserRepository after login
-    private var currentUserId: String? = null // "test_user_id" // Replace with actual user ID logic
+    private var currentUserId: String? = null
 
     init {
         viewModelScope.launch {
-            // Simulating fetching current user. Replace with actual logic.
-            val user = userRepository.getCurrentUser() // Assuming this is a suspend function
+            val user = userRepository.getCurrentUser()
             currentUserId = user?.uid
 
             if (currentUserId == null) {
                 _uiState.update { it.copy(isLoading = false, error = "User not logged in") }
                 return@launch
             }
-            loadTasks(currentUserId!!)
+            loadTasksAndSuggestions(currentUserId!!)
         }
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    private fun loadTasks(userId: String) {
+    private fun loadTasksAndSuggestions(userId: String) {
         _uiState.update { it.copy(isLoading = true) }
 
         val habitsFlow = habitRepository.getHabits(userId)
@@ -98,7 +99,6 @@ class TodayViewModel @Inject constructor(
                 val habits = (habitsResult as? NabiResult.Success)?.data ?: emptyList()
                 val medications = (medicationsResult as? NabiResult.Success)?.data ?: emptyList()
 
-                // Check for errors
                 val errorMsg = listOf(habitsResult, medicationsResult)
                     .filterIsInstance<NabiResult.Error>()
                     .joinToString(", ") { it.exception.message ?: "Unknown error" }
@@ -111,21 +111,23 @@ class TodayViewModel @Inject constructor(
                 val habitTodoItems = habits.map { TodoListItem.HabitItem(it) }
                 val medicationTodoItems = medications.map { TodoListItem.MedicationItem(it) }
 
+                val displayedSuggestions = DummySuggestions.allSuggestions.shuffled().take(6)
+
                 _uiState.update {
                     it.copy(
                         todoItems = habitTodoItems.sortedByDescending { item -> item.orderWeight },
                         medicationItems = medicationTodoItems.sortedByDescending { item -> item.orderWeight },
+                        suggestions = displayedSuggestions,
                         isLoading = false,
-                        error = error ?: it.error // Keep existing error if new one is null
+                        error = error ?: it.error
                     )
                 }
             }
         }
     }
 
-
     fun toggleCompletion(item: TodoListItem, isCompleted: Boolean) {
-        val userId = currentUserId ?: return
+        val userId = currentUserId ?: return // Should not happen if UI is guarded
         val date = uiState.value.currentDateString
 
         viewModelScope.launch {
@@ -136,8 +138,62 @@ class TodayViewModel @Inject constructor(
             if (result is NabiResult.Error) {
                 _uiState.update { it.copy(error = result.exception.message ?: "Failed to update status") }
             }
-            // Firestore listener will update the UI automatically.
-            // If not using listeners, you'd manually refresh or update the local state here.
+            // Firestore listener updates UI.
+        }
+    }
+
+    fun addSuggestionToTasks(suggestion: Suggestion) {
+        val userId = currentUserId ?: run {
+            _uiState.update { it.copy(error = "User not logged in. Cannot add suggestion.") }
+            return
+        }
+        // Use a high orderWeight to make new items appear at the top.
+        // Firestore sorts by orderWeight descending.
+        val newOrderWeight = System.currentTimeMillis().toInt()
+
+
+        viewModelScope.launch {
+            val result: NabiResult<Unit> = when (suggestion) {
+                is Suggestion.HabitSuggestion -> {
+                    val newHabit = Habit(
+                        userId = userId,
+                        name = suggestion.name,
+                        source = suggestion.source,
+                        timeOfDay = suggestion.timeOfDay,
+                        isActive = true,
+                        histories = emptyMap(),
+                        orderWeight = newOrderWeight
+                    )
+                    habitRepository.addHabit(newHabit)
+                }
+                is Suggestion.MedicationSuggestion -> {
+                    val newMedication = Medication(
+                        userId = userId,
+                        name = suggestion.name,
+                        timeOfDay = suggestion.timeOfDay,
+                        isActive = true,
+                        histories = emptyMap(),
+                        orderWeight = newOrderWeight
+                    )
+                    medicationRepository.addMedication(newMedication)
+                }
+            }
+
+            when (result) {
+                is NabiResult.Success -> {
+                    // Remove the added suggestion from the UI list
+                    _uiState.update {
+                        it.copy(suggestions = it.suggestions.filterNot { s ->
+                            s.name == suggestion.name && s.description == suggestion.description && s.type == suggestion.type
+                        })
+                    }
+                }
+                is NabiResult.Error -> {
+                    _uiState.update { it.copy(error = result.exception.message ?: "Failed to add suggestion") }
+                }
+
+                NabiResult.Loading -> TODO()
+            }
         }
     }
 }

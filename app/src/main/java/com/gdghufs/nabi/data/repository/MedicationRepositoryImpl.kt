@@ -1,4 +1,4 @@
-package com.gdghufs.nabi.data.repository // Replace with your actual package name
+package com.gdghufs.nabi.data.repository // Or your package
 
 import com.gdghufs.nabi.data.datasource.MedicationDataSource
 import com.gdghufs.nabi.data.model.Medication
@@ -15,7 +15,6 @@ class MedicationRepositoryImpl @Inject constructor(
     override fun getMedications(userId: String): Flow<NabiResult<List<Medication>>> {
         return medicationDataSource.getMedications(userId)
             .map<List<Medication>, NabiResult<List<Medication>>> { medications ->
-                // isActive filtering is now done in DataSource, sorting here
                 NabiResult.Success(medications.sortedByDescending { it.orderWeight })
             }
             .catch { e -> emit(NabiResult.Error(Exception(e))) }
@@ -24,6 +23,15 @@ class MedicationRepositoryImpl @Inject constructor(
     override suspend fun updateMedicationCompletion(medicationId: String, date: String, isCompleted: Boolean): NabiResult<Unit> {
         return try {
             medicationDataSource.updateMedicationHistory(medicationId, date, isCompleted)
+            NabiResult.Success(Unit)
+        } catch (e: Exception) {
+            NabiResult.Error(e)
+        }
+    }
+
+    override suspend fun addMedication(medication: Medication): NabiResult<Unit> { // Added
+        return try {
+            medicationDataSource.addMedication(medication)
             NabiResult.Success(Unit)
         } catch (e: Exception) {
             NabiResult.Error(e)

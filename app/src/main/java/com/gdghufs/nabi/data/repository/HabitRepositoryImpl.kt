@@ -15,7 +15,6 @@ class HabitRepositoryImpl @Inject constructor(
     override fun getHabits(userId: String): Flow<NabiResult<List<Habit>>> {
         return habitDataSource.getHabits(userId)
             .map<List<Habit>, NabiResult<List<Habit>>> { habits ->
-                // isActive filtering is now done in DataSource, sorting here
                 NabiResult.Success(habits.sortedByDescending { it.orderWeight })
             }
             .catch { e -> emit(NabiResult.Error(Exception(e))) }
@@ -24,6 +23,15 @@ class HabitRepositoryImpl @Inject constructor(
     override suspend fun updateHabitCompletion(habitId: String, date: String, isCompleted: Boolean): NabiResult<Unit> {
         return try {
             habitDataSource.updateHabitHistory(habitId, date, isCompleted)
+            NabiResult.Success(Unit)
+        } catch (e: Exception) {
+            NabiResult.Error(e)
+        }
+    }
+
+    override suspend fun addHabit(habit: Habit): NabiResult<Unit> { // Added
+        return try {
+            habitDataSource.addHabit(habit)
             NabiResult.Success(Unit)
         } catch (e: Exception) {
             NabiResult.Error(e)

@@ -1,10 +1,11 @@
-package com.gdghufs.nabi.data.datasource // Replace with your actual package name
+package com.gdghufs.nabi.data.source // Or your package
 
+import com.gdghufs.nabi.data.datasource.HabitDataSource
 import com.gdghufs.nabi.data.model.FirebaseConstants
 import com.gdghufs.nabi.data.model.Habit
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.ktx.snapshots
+import com.google.firebase.firestore.ktx.toObjects
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
@@ -17,11 +18,7 @@ class HabitDataSourceImpl @Inject constructor(
     override fun getHabits(userId: String): Flow<List<Habit>> {
         return firestore.collection(FirebaseConstants.COLLECTION_HABITS)
             .whereEqualTo("userId", userId)
-            .whereEqualTo("isActive", true)
-            // Firestore doesn't support different orderBy on different properties if you have range/equality filters on others
-            // Sorting by orderWeight will be done client-side after fetching active habits.
-            // Or, if orderWeight is critical for querying, reconsider indexing strategy.
-            // .orderBy("orderWeight", Query.Direction.DESCENDING) // This might require a composite index
+            .whereEqualTo("active", true)
             .snapshots()
             .map { snapshot ->
                 snapshot.toObjects(Habit::class.java)
@@ -33,5 +30,12 @@ class HabitDataSourceImpl @Inject constructor(
             .document(habitId)
             .update("histories.$date", isDone)
             .await()
+    }
+
+    override suspend fun addHabit(habit: Habit) { // Added
+        val docRef = firestore.collection(FirebaseConstants.COLLECTION_HABITS).document()
+        // Use the habit object passed, but ensure it has the new ID
+        val habitWithId = habit.copy(id = docRef.id)
+        docRef.set(habitWithId).await()
     }
 }

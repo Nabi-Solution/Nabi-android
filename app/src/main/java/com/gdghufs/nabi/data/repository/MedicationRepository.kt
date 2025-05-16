@@ -7,4 +7,5 @@ import kotlinx.coroutines.flow.Flow
 interface MedicationRepository {
     fun getMedications(userId: String): Flow<NabiResult<List<Medication>>>
     suspend fun updateMedicationCompletion(medicationId: String, date: String, isCompleted: Boolean): NabiResult<Unit>
+    suspend fun addMedication(medication: Medication): NabiResult<Unit> // Added
 }

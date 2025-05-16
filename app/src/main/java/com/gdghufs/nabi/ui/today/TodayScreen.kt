@@ -26,8 +26,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.gdghufs.nabi.R
+import com.gdghufs.nabi.data.model.DummySuggestions
 import com.gdghufs.nabi.data.model.Habit
 import com.gdghufs.nabi.data.model.Medication
+import com.gdghufs.nabi.data.model.Suggestion
 import com.gdghufs.nabi.data.model.TimeOfDay
 import com.gdghufs.nabi.data.repository.HabitRepository
 import com.gdghufs.nabi.data.repository.MedicationRepository
@@ -39,6 +41,7 @@ import com.gdghufs.nabi.ui.theme.NabiTheme
 import com.gdghufs.nabi.utils.DateUtil
 import com.gdghufs.nabi.utils.NabiResult
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 
 // Placeholder for R.drawable.add_circle_24px
@@ -72,9 +75,9 @@ fun TodayScreen(viewModel: TodayViewModel = hiltViewModel()) {
             ) {
                 Text(
                     "Today",
-                    fontFamily = AmiriFamily, // Adjusted
+                    fontFamily = AmiriFamily, // Ensure AmiriFamily is available
                     color = Color(0xff740D0D),
-                    fontWeight = FontWeight.Bold, // Adjusted
+                    fontWeight = FontWeight.Bold,
                     fontSize = 24.sp
                 )
             }
@@ -86,10 +89,7 @@ fun TodayScreen(viewModel: TodayViewModel = hiltViewModel()) {
                         .align(Alignment.BottomCenter)
                         .background(
                             brush = Brush.verticalGradient(
-                                colors = listOf(
-                                    Color(0x1A000000),
-                                    Color.Transparent
-                                )
+                                colors = listOf(Color(0x1A000000), Color.Transparent)
                             )
                         )
                 )
@@ -119,23 +119,21 @@ fun TodayScreen(viewModel: TodayViewModel = hiltViewModel()) {
                     Box(
                         Modifier
                             .fillMaxWidth()
-                            .background(Color.White) // Ensure background for the date text
-                            .padding(top = 12.dp, bottom = 8.dp, start = 12.dp) // Adjust padding
+                            .background(Color.White)
+                            .padding(top = 12.dp, bottom = 8.dp, start = 12.dp)
                     ) {
                         Text(
-                            uiState.displayDateString, // Dynamic date
-                            fontFamily = AmiriFamily, // Adjusted
+                            uiState.displayDateString,
+                            fontFamily = AmiriFamily, // Ensure AmiriFamily is available
                             color = Color(0xffE2B2B2),
-                            fontWeight = FontWeight.Bold, // Adjusted
+                            fontWeight = FontWeight.Bold,
                             fontSize = 36.sp
                         )
                     }
                 }
 
                 if (uiState.todoItems.isNotEmpty()) {
-                    item {
-                        ListSectionHeader("To-Do")
-                    }
+                    item { ListSectionHeader("To-Do") }
                     itemsIndexed(
                         uiState.todoItems,
                         key = { _, item -> "habit-${item.id}" }) { index, item ->
@@ -146,16 +144,12 @@ fun TodayScreen(viewModel: TodayViewModel = hiltViewModel()) {
                                 viewModel.toggleCompletion(item, isChecked)
                             }
                         )
-                        if (index < uiState.todoItems.size - 1) {
-                            ListDivider()
-                        }
+                        if (index < uiState.todoItems.size - 1) { ListDivider() }
                     }
                 }
 
                 if (uiState.medicationItems.isNotEmpty()) {
-                    item {
-                        ListSectionHeader("Medication")
-                    }
+                    item { ListSectionHeader("Medication") }
                     itemsIndexed(
                         uiState.medicationItems,
                         key = { _, item -> "med-${item.id}" }) { index, item ->
@@ -166,21 +160,30 @@ fun TodayScreen(viewModel: TodayViewModel = hiltViewModel()) {
                                 viewModel.toggleCompletion(item, isChecked)
                             }
                         )
-                        if (index < uiState.medicationItems.size - 1) {
-                            ListDivider()
-                        }
+                        if (index < uiState.medicationItems.size - 1) { ListDivider() }
                     }
                 }
 
-
-                // Suggestions (static for now as per original code)
-                item {
-                    ListSectionHeader("Suggestions")
-                }
-                items(3, key = { it }) { index -> // Using index as key for static items
-                    SuggestionItem() // Assuming this is static or will get its own data source
-                    if (index < 2) {
-                        Spacer(Modifier.height(16.dp))
+                // Suggestions Section
+                if (uiState.suggestions.isNotEmpty()) {
+                    item {
+                        ListSectionHeader("Suggestions")
+                    }
+                    itemsIndexed(
+                        uiState.suggestions,
+                        // Using a combination of properties for a more unique key
+                        key = { _, suggestion -> suggestion.name + suggestion.description + suggestion.type.name }
+                    ) { index, suggestion ->
+                        SuggestionItem(
+                            suggestion = suggestion,
+                            onAddClick = {
+                                viewModel.addSuggestionToTasks(suggestion)
+                            }
+                        )
+                        // Add spacer between suggestion items, but not after the last one
+                        if (index < uiState.suggestions.size - 1) {
+                            Spacer(Modifier.height(16.dp))
+                        }
                     }
                 }
                 item { Spacer(Modifier.height(24.dp)) } // Bottom padding
@@ -298,18 +301,21 @@ fun TodoItem(
 }
 
 @Composable
-fun SuggestionItem() {
+fun SuggestionItem(
+    suggestion: Suggestion,
+    onAddClick: () -> Unit
+) {
     Row(
         Modifier
             .fillMaxWidth()
             .shadow(
                 elevation = 4.dp,
                 shape = RoundedCornerShape(4.dp),
-                spotColor = Color(0x1A000000),
-                ambientColor = Color(0x1A000000)
+                spotColor = Color(0x1A000000), // Apply shadow color
+                ambientColor = Color(0x1A000000) // Apply shadow color
             )
             .background(color = Color(0xffFCFFD9), shape = RoundedCornerShape(4.dp))
-            .padding(20.dp, 16.dp),
+            .padding(horizontal = 20.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(
@@ -317,126 +323,106 @@ fun SuggestionItem() {
                 .weight(1f)
                 .fillMaxWidth()
         ) {
-            Text("Suggestion Text", fontSize = 14.sp, fontWeight = FontWeight.Medium)
+            Text(
+                text = suggestion.name,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color.Black // Ensure text is visible
+            )
             Spacer(Modifier.height(2.dp))
-            Text("Suggestion Description", fontSize = 10.sp, fontWeight = FontWeight.Normal)
+            Text(
+                text = suggestion.description,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Normal,
+                color = Color.Gray // Slightly lighter color for description
+            )
         }
 
         Box(
             modifier = Modifier
                 .size(36.dp)
                 .clip(CircleShape)
-                .clickable { /* TODO: Handle suggestion click */ }
+                .clickable(onClick = onAddClick) // Invoke callback on click
         ) {
             Image(
                 modifier = Modifier
                     .size(24.dp)
                     .align(Alignment.Center),
-                painter = painterResource(R.drawable.add_circle_24px), // Ensure this drawable exists
+                painter = painterResource(R.drawable.add_circle_24px), // Make sure this drawable exists
                 colorFilter = ColorFilter.tint(Color.Black),
                 contentDescription = "Add suggestion"
             )
         }
     }
 }
-
 @SuppressLint("ViewModelConstructorInComposable")
 @Preview(showBackground = true)
 @Composable
 fun TodayScreenPreview() {
-    NabiTheme { // Replace with your actual theme
+    NabiTheme {
         // Mock ViewModel for preview
-        val mockViewModel = TodayViewModel(
-            habitRepository = object : HabitRepository { // Mock implementation
-                override fun getHabits(userId: String): Flow<NabiResult<List<Habit>>> = flowOf(
-                    NabiResult.Success(
-                        listOf(
-                            Habit(
-                                id = "1",
-                                name = "Morning Walk",
-                                source = "doctor",
-                                timeOfDay = TimeOfDay.MORNING,
-                                orderWeight = 10,
-                                histories = mapOf(DateUtil.getCurrentDateString() to true)
-                            ),
-                            Habit(
-                                id = "2",
-                                name = "Read a book",
-                                source = "patient",
-                                timeOfDay = TimeOfDay.EVENING,
-                                orderWeight = 5
-                            )
-                        )
+        val mockHabitRepo = object : HabitRepository {
+            override fun getHabits(userId: String): Flow<NabiResult<List<Habit>>> = flowOf(
+                NabiResult.Success(
+                    listOf(
+                        Habit(id = "h1", userId = "test", name = "Morning Walk Preview", source = "doctor", timeOfDay = TimeOfDay.MORNING, histories = mapOf(DateUtil.getCurrentDateString() to true), orderWeight = 1),
+                        Habit(id = "h2", userId = "test", name = "Read a Book Preview", source = "patient", timeOfDay = TimeOfDay.EVENING, orderWeight = 0)
                     )
                 )
-
-                override suspend fun updateHabitCompletion(
-                    habitId: String,
-                    date: String,
-                    isCompleted: Boolean
-                ): NabiResult<Unit> = NabiResult.Success(Unit)
-            },
-            medicationRepository = object : MedicationRepository { // Mock implementation
-                override fun getMedications(userId: String): Flow<NabiResult<List<Medication>>> =
-                    flowOf(
-                        NabiResult.Success(
-                            listOf(
-                                Medication(
-                                    id = "med1",
-                                    name = "Vitamin D",
-                                    timeOfDay = TimeOfDay.ANYTIME,
-                                    orderWeight = 8,
-                                    histories = mapOf(
-                                        DateUtil.getCurrentDateString() to false
-                                    )
-                                )
-                            )
-                        )
+            )
+            override suspend fun updateHabitCompletion(habitId: String, date: String, isCompleted: Boolean): NabiResult<Unit> = NabiResult.Success(Unit)
+            override suspend fun addHabit(habit: Habit): NabiResult<Unit> = NabiResult.Success(Unit)
+        }
+        val mockMedicationRepo = object : MedicationRepository {
+            override fun getMedications(userId: String): Flow<NabiResult<List<Medication>>> = flowOf(
+                NabiResult.Success(
+                    listOf(
+                        Medication(id = "m1", userId = "test", name = "Vitamin D Preview", timeOfDay = TimeOfDay.ANYTIME, histories = mapOf(DateUtil.getCurrentDateString() to false), orderWeight = 1)
                     )
-
-                override suspend fun updateMedicationCompletion(
-                    medicationId: String,
-                    date: String,
-                    isCompleted: Boolean
-                ): NabiResult<Unit> = NabiResult.Success(Unit)
-            },
-            userRepository = object : UserRepository { // Mock UserRepository
-                override suspend fun signInWithEmailPassword(
-                    email: String,
-                    password: String
-                ): NabiResult<User> = NabiResult.Error(
-                    Exception()
                 )
+            )
+            override suspend fun updateMedicationCompletion(medicationId: String, date: String, isCompleted: Boolean): NabiResult<Unit> = NabiResult.Success(Unit)
+            override suspend fun addMedication(medication: Medication): NabiResult<Unit> = NabiResult.Success(Unit)
+        }
+        val mockUserRepo = object : UserRepository {
+            override suspend fun getCurrentUser(): User? = User("preview_user", "preview@example.com", "Preview User", true, "patient")
+            // Implement other methods as needed for preview, or leave as is if not directly used by TodayScreen init logic for preview state
+            override suspend fun signInWithEmailPassword(email: String, password: String): NabiResult<User> = NabiResult.Error(Exception("Preview"))
+            override suspend fun signUpWithEmailPassword(email: String, password: String, name: String, role: String): NabiResult<User> = NabiResult.Error(Exception("Preview"))
+            override suspend fun signInWithGoogleCredential(credential: com.google.firebase.auth.AuthCredential, defaultRole: String): NabiResult<User> = NabiResult.Error(Exception("Preview"))
+            override fun signOut() {}
+            override suspend fun updateUserDisease(uid: String, disease: String): NabiResult<Unit> = NabiResult.Success(Unit)
+        }
 
-                override suspend fun signUpWithEmailPassword(
-                    email: String,
-                    password: String,
-                    name: String,
-                    role: String
-                ): NabiResult<User> = NabiResult.Error(
-                    Exception()
-                )
-
-                override suspend fun signInWithGoogleCredential(
-                    credential: com.google.firebase.auth.AuthCredential,
-                    defaultRole: String
-                ): NabiResult<User> = NabiResult.Error(
-                    java.lang.Exception()
-                )
-
-                override suspend fun getCurrentUser(): User? =
-                    User("preview_user", "a@b.com", "Preview User", true, "patient")
-
-                override fun signOut() {}
-                override suspend fun updateUserDisease(
-                    uid: String,
-                    disease: String
-                ): NabiResult<Unit> = NabiResult.Success(Unit)
-            }
+        // For a more direct preview of suggestions, we can initialize a TodayScreenUiState
+        val previewState = TodayScreenUiState(
+            todoItems = listOf(
+                TodoListItem.HabitItem(Habit(id = "h1", userId = "test", name = "Morning Walk Preview", source = "doctor", timeOfDay = TimeOfDay.MORNING, histories = mapOf(DateUtil.getCurrentDateString() to true), orderWeight = 1))
+            ),
+            medicationItems = listOf(
+                TodoListItem.MedicationItem(Medication(id = "m1", userId = "test", name = "Vitamin D Preview", timeOfDay = TimeOfDay.ANYTIME, histories = mapOf(DateUtil.getCurrentDateString() to false), orderWeight = 1))
+            ),
+            suggestions = DummySuggestions.allSuggestions.shuffled().take(3), // Take 3 dummy suggestions for preview
+            isLoading = false,
+            error = null,
+            currentDateString = DateUtil.getCurrentDateString(),
+            displayDateString = "16 May" // Example static date for preview
         )
+        val mockViewModel = TodayViewModel(mockHabitRepo, mockMedicationRepo, mockUserRepo)
+
+        // To preview with the static state:
+        val todayScreenUiState by MutableStateFlow(previewState).collectAsState()
+        // Then pass todayScreenUiState to a modified TodayScreenContent composable that takes UiState directly
+        // OR rely on the mockViewModel, ensuring its init block populates suggestions.
+        // For this example, we'll use the mockViewModel.
+        // To ensure suggestions appear in preview, you might need to trigger viewModel's init logic
+        // or expose a way to set suggestions for preview purposes if init is complex.
+
         TodayScreen(viewModel = mockViewModel)
     }
 }
+
+
 
 @Preview(showBackground = true)
 @Composable
@@ -471,12 +457,17 @@ fun MedicationItemPreview() {
     }
 }
 
-
-@Preview
+@Preview(showBackground = true)
 @Composable
 fun SuggestionItemPreview() {
     NabiTheme {
-        SuggestionItem()
+        val sampleSuggestion = Suggestion.HabitSuggestion(
+            name = "Stretch for 10 minutes",
+            description = "Improve flexibility and relax.",
+            timeOfDay = TimeOfDay.ANYTIME,
+            source = "ai"
+        )
+        SuggestionItem(suggestion = sampleSuggestion, onAddClick = {})
     }
 }
 

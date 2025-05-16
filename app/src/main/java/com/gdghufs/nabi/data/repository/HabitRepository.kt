@@ -7,4 +7,5 @@ import kotlinx.coroutines.flow.Flow
 interface HabitRepository {
     fun getHabits(userId: String): Flow<NabiResult<List<Habit>>>
     suspend fun updateHabitCompletion(habitId: String, date: String, isCompleted: Boolean): NabiResult<Unit>
+    suspend fun addHabit(habit: Habit): NabiResult<Unit> // Added
 }

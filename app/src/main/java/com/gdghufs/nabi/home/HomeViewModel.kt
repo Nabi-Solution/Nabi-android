@@ -13,7 +13,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val userRepository: UserRepository,
+    private val userRepository: UserRepository
 ) : ViewModel() {
     private val _currentUser = MutableStateFlow<User?>(null)
     val currentUser: StateFlow<User?> = _currentUser.asStateFlow()
@@ -33,9 +33,9 @@ class HomeViewModel @Inject constructor(
             _isLoading.value = true
             val user = userRepository.getCurrentUser()
             _currentUser.value = user
-
+            
             _isLoading.value = false
-
+            
             _showDiseaseDialog.value = user?.disease == null
         }
     }
