@@ -1,10 +1,9 @@
 package com.gdghufs.nabi.di // 실제 패키지 경로
 
-import android.service.autofill.UserData
-import com.gdghufs.nabi.data.datasource.AuthDataSource
-import com.gdghufs.nabi.data.datasource.FirebaseAuthDataSource
-import com.gdghufs.nabi.data.repository.AuthRepository
-import com.gdghufs.nabi.data.repository.AuthRepositoryImpl
+import com.gdghufs.nabi.data.repository.ChatAppointmentRepository
+import com.gdghufs.nabi.data.repository.ChatAppointmentRepositoryImpl
+import com.gdghufs.nabi.data.repository.UserRepository
+import com.gdghufs.nabi.data.repository.UserRepositoryImpl
 import com.gdghufs.nabi.data.repository.ChatRepository
 import com.gdghufs.nabi.data.repository.ChatRepositoryImpl
 import com.gdghufs.nabi.data.repository.TextToSpeechRepository
@@ -22,8 +21,8 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindAuthRepository(
-        authRepositoryImpl: AuthRepositoryImpl
-    ): AuthRepository
+        authRepositoryImpl: UserRepositoryImpl
+    ): UserRepository
 
     @Binds
     @Singleton
@@ -36,4 +35,10 @@ abstract class RepositoryModule {
     abstract fun bindTextToSpeechRepository(
         textToSpeechRepositoryImpl: TextToSpeechRepositoryImpl
     ): TextToSpeechRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindChatAppointmentRepository(
+        chatAppointmentRepositoryImpl: ChatAppointmentRepositoryImpl
+    ): ChatAppointmentRepository
 }

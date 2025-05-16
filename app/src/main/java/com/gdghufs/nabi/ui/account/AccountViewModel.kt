@@ -2,7 +2,7 @@ package com.gdghufs.nabi.ui.account
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.gdghufs.nabi.data.repository.AuthRepository
+import com.gdghufs.nabi.data.repository.UserRepository
 import com.gdghufs.nabi.domain.model.User
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,7 +13,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AccountViewModel @Inject constructor(
-    private val authRepository: AuthRepository
+    private val userRepository: UserRepository
 ) : ViewModel() {
     private val _currentUser = MutableStateFlow<User?>(null)
     val currentUser: StateFlow<User?> = _currentUser.asStateFlow()
@@ -28,7 +28,7 @@ class AccountViewModel @Inject constructor(
     private fun checkCurrentUser() {
         viewModelScope.launch {
             _isLoading.value = true
-            val user = authRepository.getCurrentUser()
+            val user = userRepository.getCurrentUser()
             _currentUser.value = user
             _isLoading.value = false
         }
@@ -36,7 +36,7 @@ class AccountViewModel @Inject constructor(
 
     fun signOut() {
         viewModelScope.launch {
-            authRepository.signOut()
+            userRepository.signOut()
             _currentUser.value = null
         }
     }

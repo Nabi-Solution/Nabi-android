@@ -5,5 +5,6 @@ data class UserProfileDto(
     val name: String? = null,
     val role: String? = null,
     val disease : String? = null,
-    val emoji : String? = null
+    val emoji : String? = null,
+    val summary : String? = null
 )

@@ -23,7 +23,7 @@ fun AppNavHost(
         modifier = modifier
     ) {
         composable(Screen.Home.route) {
-            HomeScreen("John Doe")
+            HomeScreen()
         }
         composable(Screen.Today.route) {
             TodayScreen()

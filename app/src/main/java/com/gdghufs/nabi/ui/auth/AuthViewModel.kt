@@ -1,16 +1,14 @@
 package com.gdghufs.nabi.ui.auth
 
-import androidx.credentials.CredentialManager
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.gdghufs.nabi.data.repository.AuthRepository
+import com.gdghufs.nabi.data.repository.UserRepository
 import com.gdghufs.nabi.domain.model.User
 import com.google.firebase.auth.AuthCredential
-import com.google.firebase.auth.FirebaseUser
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import com.gdghufs.nabi.utils.Result
+import com.gdghufs.nabi.utils.NabiResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 
 
@@ -23,7 +21,7 @@ data class AuthUiState(
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
-    private val authRepository: AuthRepository
+    private val userRepository: UserRepository
 ) : ViewModel() {
 
     private val _uiState =
@@ -36,20 +34,20 @@ class AuthViewModel @Inject constructor(
     fun signInWithEmailPassword(email: String, password: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null, authSuccess = false) }
-            when (val result = authRepository.signInWithEmailPassword(email, password)) {
-                is Result.Success -> {
+            when (val result = userRepository.signInWithEmailPassword(email, password)) {
+                is NabiResult.Success -> {
                     _uiState.update {
                         it.copy(isLoading = false, currentUser = result.data, authSuccess = true)
                     }
                 }
 
-                is Result.Error -> {
+                is NabiResult.Error -> {
                     _uiState.update {
                         it.copy(isLoading = false, error = result.exception.message ?: "로그인 실패")
                     }
                 }
 
-                Result.Loading -> {
+                NabiResult.Loading -> {
                 }
             }
         }
@@ -59,20 +57,20 @@ class AuthViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null, authSuccess = false) }
             when (val result =
-                authRepository.signUpWithEmailPassword(email, password, name, "patient")) {
-                is Result.Success -> {
+                userRepository.signUpWithEmailPassword(email, password, name, "patient")) {
+                is NabiResult.Success -> {
                     _uiState.update {
                         it.copy(isLoading = false, currentUser = result.data, authSuccess = true)
                     }
                 }
 
-                is Result.Error -> {
+                is NabiResult.Error -> {
                     _uiState.update {
                         it.copy(isLoading = false, error = result.exception.message ?: "회원가입 실패")
                     }
                 }
 
-                Result.Loading -> {
+                NabiResult.Loading -> {
                 }
             }
         }
@@ -81,14 +79,14 @@ class AuthViewModel @Inject constructor(
     fun signInWithGoogleCredential(credential: AuthCredential) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null, authSuccess = false) }
-            when (val result = authRepository.signInWithGoogleCredential(credential)) {
-                is Result.Success -> {
+            when (val result = userRepository.signInWithGoogleCredential(credential)) {
+                is NabiResult.Success -> {
                     _uiState.update {
                         it.copy(isLoading = false, currentUser = result.data, authSuccess = true)
                     }
                 }
 
-                is Result.Error -> {
+                is NabiResult.Error -> {
                     _uiState.update {
                         it.copy(
                             isLoading = false,
@@ -97,7 +95,7 @@ class AuthViewModel @Inject constructor(
                     }
                 }
 
-                Result.Loading -> {
+                NabiResult.Loading -> {
                 }
             }
         }

@@ -1,9 +1,11 @@
 package com.gdghufs.nabi.di
 
 import com.gdghufs.nabi.data.datasource.AuthDataSource
+import com.gdghufs.nabi.data.datasource.ChatAppointmentDataSource
 import com.gdghufs.nabi.data.datasource.ChatDataSource
 import com.gdghufs.nabi.data.datasource.FirebaseAuthDataSource
 import com.gdghufs.nabi.data.datasource.FirebaseChatDataSource
+import com.gdghufs.nabi.data.datasource.FirestoreChatAppointmentDataSource
 import com.gdghufs.nabi.data.datasource.FirestoreUserDataSourceImpl
 import com.gdghufs.nabi.data.datasource.TextToSpeechDataSource
 import com.gdghufs.nabi.data.datasource.TextToSpeechRemoteDataSource
@@ -40,4 +42,10 @@ abstract class DataSourceModule {
     abstract fun bindTextToSpeechDataSource(
         textToSpeechRemoteDataSource: TextToSpeechRemoteDataSource
     ): TextToSpeechDataSource
+
+    @Binds
+    @Singleton
+    abstract fun bindChatAppointmentDataSource(
+        firebaseChatAppointmentDataSource: FirestoreChatAppointmentDataSource
+    ): ChatAppointmentDataSource
 }

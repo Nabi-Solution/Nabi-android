@@ -3,7 +3,7 @@ package com.gdghufs.nabi.data.datasource
 import com.gdghufs.nabi.data.model.UserProfileDto
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
-import com.gdghufs.nabi.utils.Result
+import com.gdghufs.nabi.utils.NabiResult
 import com.google.firebase.firestore.SetOptions
 import javax.inject.Inject
 
@@ -12,37 +12,37 @@ class FirestoreUserDataSourceImpl @Inject constructor(private val firestore: Fir
         private const val USERS_COLLECTION = "users"
     }
 
-    override suspend fun getUserProfile(uid: String): Result<UserProfileDto?> {
+    override suspend fun getUserProfile(uid: String): NabiResult<UserProfileDto?> {
         return try {
             val documentSnapshot =
                 firestore.collection(USERS_COLLECTION).document(uid).get().await()
             if (documentSnapshot.exists()) {
                 val userProfileDto = documentSnapshot.toObject(UserProfileDto::class.java)
-                Result.Success(userProfileDto)
+                NabiResult.Success(userProfileDto)
             } else {
-                Result.Success(null)
+                NabiResult.Success(null)
             }
         } catch (e: Exception) {
-            Result.Error(e)
+            NabiResult.Error(e)
         }
     }
 
-    override suspend fun saveUserProfile(uid: String, userProfile: UserProfileDto): Result<Unit> {
+    override suspend fun saveUserProfile(uid: String, userProfile: UserProfileDto): NabiResult<Unit> {
         return try {
             firestore.collection(USERS_COLLECTION).document(uid).set(userProfile).await()
-            Result.Success(Unit)
+            NabiResult.Success(Unit)
         } catch (e: Exception) {
-            Result.Error(e)
+            NabiResult.Error(e)
         }
     }
 
-    override suspend fun updateUserProfile(uid: String, userProfile: UserProfileDto): Result<Unit> {
+    override suspend fun updateUserProfile(uid: String, userProfile: UserProfileDto): NabiResult<Unit> {
         return try {
             firestore.collection(USERS_COLLECTION).document(uid)
                 .set(userProfile, SetOptions.merge()).await()
-            Result.Success(Unit)
+            NabiResult.Success(Unit)
         } catch (e: Exception) {
-            Result.Error(e)
+            NabiResult.Error(e)
         }
     }
 }
